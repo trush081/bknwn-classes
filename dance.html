@@ -1,0 +1,324 @@
+<!-- Jackrabbit feed -->
+<script src="https://app.jackrabbitclass.com/jr3.0/Openings/OpeningsJS?OrgID=555865"></script>
+
+<!-- FILTER BAR -->
+<div id="filters" hidden>
+  <select id="fSeason"><option value="">Season</option></select>
+  <span class="chip">
+    Time
+    <input type="time" id="fTFrom" style="min-width:6em">
+    &ndash;
+    <input type="time" id="fTTo"   style="min-width:6em">
+  </span>
+  <span class="chip">
+    Age
+    <input type="number" id="fAge" min="0" placeholder="any" style="min-width:4em">
+  </span>
+  <span class="chip">
+    Date
+    <input type="date" id="fFrom" style="min-width:8em">
+    &ndash;
+    <input type="date" id="fTo"   style="min-width:8em">
+  </span>
+  <button id="applyBtn" class="btn">Apply</button>
+  <button id="clearBtn" class="btn">Clear</button>
+</div>
+
+<!-- CARDS -->
+<div id="cards-container">Loading…</div>
+
+<style>
+:root {
+  --primary: #500975;
+  --primary-dark: #3c055a;
+  --accent: #2980b9;
+  --bg: #f6f5fa;
+  --bg-card: #fff;
+  --text: #2d2d2d;
+  --text-muted: #5d5d5d;
+  --rad: 14px;
+  --gap: 1rem;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+body { margin:0; background:var(--bg); font-family:var(--font); color:var(--text); }
+* { box-sizing:border-box; }
+
+/* FILTER BAR */
+#filters {
+  max-width:1200px; margin:var(--gap) auto 0; padding:0 var(--gap);
+  display:flex; flex-wrap:wrap; gap:.8rem; align-items:center; font-size:.9rem;
+}
+#filters select,#filters input {
+  padding:.5em .7em; border:1px solid #ccc; border-radius:var(--rad); background:#fff;
+}
+.chip { display:flex; align-items:center; gap:.4em; }
+.btn {
+  padding:.55em 1.3em; background:var(--primary); color:#fff; border:none;
+  border-radius:9999px; font-weight:600; cursor:pointer;
+}
+.btn:hover { background:var(--primary-dark); }
+
+/* GRID */
+#cards-container {
+  width:100%; max-width:1200px; margin:var(--gap) auto;
+  padding:0 var(--gap) var(--gap); display:grid; gap:var(--gap);
+  grid-template-columns: repeat(auto-fit,minmax(320px,1fr));
+}
+@media(max-width:700px){
+  #cards-container{grid-template-columns:1fr!important}
+}
+
+/* CARD */
+.card {
+  background:var(--bg-card); border-left:6px solid var(--primary);
+  border-radius:var(--rad); box-shadow:0 2px 6px rgba(0,0,0,.12);
+  padding:1.1rem; display:flex; flex-direction:column;
+}
+.card h3 { margin:0 0 .6rem; font-size:1.15rem; color:var(--primary); font-weight:600; }
+.description { font-size:.94rem; line-height:1.45; margin-bottom:.55rem; }
+.short-desc {
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+}
+.read-more-toggle {
+  display:block; font-size:.85rem; color:var(--accent); margin-top:.3rem; cursor:pointer;
+}
+.card p { margin:.3rem 0; font-size:.88rem; color:var(--text-muted); }
+.tuition {
+  font-size:1.05rem; font-weight:700; color:#0984e3; margin-top:.4rem;
+}
+.register-button {
+  margin-top:auto; display:inline-block; padding:.65rem 1.15rem;
+  background:var(--primary); color:#fff; text-decoration:none;
+  border-radius:var(--rad); font-weight:600;
+}
+.register-button:hover { background:var(--primary-dark); }
+</style>
+
+<script>
+// ─── Field Toggles in Code ───────────────────────
+const fieldToggles = {
+  description: true,   
+  openings:    false,
+  age:         true,
+  days:        true,
+  dates:       true,
+  time:        true,
+  tuition:     true,
+  register:    true
+};
+
+// inject viewport meta
+;(function(){
+  if (!document.querySelector('meta[name=viewport]')) {
+    const m = document.createElement('meta');
+    m.name = 'viewport';
+    m.content = 'width=device-width,initial-scale=1';
+    document.head.appendChild(m);
+  }
+})();
+
+// Helpers
+const suf = n => ["th","st","nd","rd"][(n%10>3||~~(n%100/10)==1)?0:n%10];
+function dateRange(start, end) {
+  const fmt = d =>
+    `${d.toLocaleString("en-US", { month: "long" })} ` +
+    `${d.getDate()}${suf(d.getDate())} ` +
+    `${d.getFullYear()}`;
+
+  if (+start === +end) {
+    return fmt(start);
+  } else {
+    // Use &ndash; so insertAdjacentHTML will render a true dash
+    return `${fmt(start)} &ndash; ${fmt(end)}`;
+  }
+}
+
+function ageBand(str) {
+  str = str.toLowerCase().replace(/yrs?|years?/g,"").trim();
+  if (!str||/all/.test(str)) return [0,99];
+  let m = str.match(/^(\d+)\s*(\+|&\s*up|and\s*up)$/); if (m) return [+m[1],99];
+  m = str.match(/^(\d+)\s*(?:-|to)\s*(\d+)/); if (m) return [+m[1],+m[2]];
+  m = str.match(/^(\d+)$/); if (m) return [+m[1],+m[1]];
+  return [0,99];
+}
+
+const toMin = (h,m) => h*60 + m;
+function parseClock(t) {
+  const m = t.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i);
+  if (!m) return null;
+  let h = +m[1]%12;
+  if (m[3].toLowerCase()==='pm') h+=12;
+  if (m[3].toLowerCase()==='am'&&h===12) h=0;
+  return toMin(h, +m[2]||0);
+}
+function timeBand(s) {
+  if (!s) return [null,null];
+  const parts = s.split(/–|-|to/i).map(v=>v.trim());
+  if (parts.length===1) { const m=parseClock(parts[0]); return [m,m]; }
+  let [a,b] = parts;
+  const ap = a.match(/(am|pm)/i)?.[1]||b.match(/(am|pm)/i)?.[1];
+  if (ap&&!a.match(/(am|pm)/i)) a+=` ${ap}`;
+  if (ap&&!b.match(/(am|pm)/i)) b+=` ${ap}`;
+  return [parseClock(a), parseClock(b)];
+}
+
+function brief(text) {
+  return text
+    // normalize curly apostrophes to straight
+    .replace(/[‘’]/g, "'")
+    // normalize any long dash to ASCII hyphen
+    .replace(/[–—]/g, "-")
+    // our lite‑markdown cleanups
+    .replace(/\|\|/g, " ")
+    .replace(/\*\s+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    // cut at 140 chars, then add three ASCII dots
+    .slice(0, 140) + (text.length > 140 ? "..." : "");
+}
+const toHTML = t => t.replace(/\|\|/g,"<br>")
+                   .replace(/^\*\s+(.*)$/gm,"<ul><li>$1</li></ul>");
+
+// State
+let all = [], rows = [];
+
+// Load feed
+const loader = setInterval(()=>{
+  const tbl = document.querySelector(".responsive-table");
+  if (!tbl) return;
+  clearInterval(loader);
+
+  all = [...tbl.querySelectorAll("tbody tr")].map(r=>{
+    const c = r.querySelectorAll("td,th");
+    return {
+      link:    c[0]?.querySelector("a")?.href||"",
+      name:    c[1]?.textContent.trim(),
+      desc:    c[2]?.textContent.trim(),
+      days:    c[3]?.textContent.trim(),    
+      time:    c[4]?.textContent.trim(),
+      age:     c[6]?.textContent.trim(),
+      open:    c[7]?.textContent.trim(),
+      sRaw:    c[8]?.textContent.trim(),
+      eRaw:    c[9]?.textContent.trim(),
+      session: c[10]?.textContent.trim(),
+      tuition: c[11]?.textContent.trim()
+    };
+  })
+  .filter(r=>{
+    if (r.open.toLowerCase().includes("full")) return false;
+    const n = parseInt(r.open,10);
+    return isNaN(n)||n>0;
+  })
+  .sort((a,b)=>new Date(a.sRaw)-new Date(b.sRaw));
+
+  // populate seasons
+  [...new Set(all.map(r=>r.session.split(" ")[1]||"").filter(Boolean))]
+    .forEach(v=>fSeason.insertAdjacentHTML("beforeend",`<option>${v}</option>`));
+
+  filters.hidden = false;
+  applyBtn.onclick = apply;
+  clearBtn.onclick = clearFilters;
+  apply();
+  tbl.parentElement.remove();
+},300);
+
+// Clear filters
+function clearFilters() {
+  fSeason.value = "";
+  fTFrom.value = "";
+  fTTo.value   = "";
+  fAge.value   = "";
+  fFrom.value  = "";
+  fTo.value    = "";
+  apply();
+}
+
+// Apply filters
+function apply(){
+  const season = fSeason.value.trim();
+  const ageVal = parseInt(fAge.value,10);
+  const ageF   = isNaN(ageVal)?null:ageVal;
+  const dF     = fFrom.value, dT = fTo.value;
+  const tMin   = fTFrom.value?toMin(...fTFrom.value.split(":").map(Number)):null;
+  const tMax   = fTTo.value?toMin(...fTTo.value.split(":").map(Number)):null;
+
+  rows = all.filter(r=>{
+    if (season&&(r.session.split(" ")[1]||"")!==season) return false;
+    if (ageF!==null){
+      const [lo,hi] = ageBand(r.age);
+      if (ageF<lo||ageF>hi) return false;
+    }
+    if (dF && new Date(r.sRaw)<new Date(dF)) return false;
+    if (dT && new Date(r.sRaw)>new Date(dT)) return false;
+    if (tMin!==null||tMax!==null){
+      const [st,en] = timeBand(r.time);
+      if (st===null||en===null) return false;
+      if (tMin!==null&&st<tMin) return false;
+      if (tMax!==null&&en>tMax) return false;
+    }
+    return true;
+  });
+
+  render();
+}
+
+// Render cards
+function render(){
+  const box = document.getElementById("cards-container");
+  box.innerHTML = "";
+
+  rows.forEach(r=>{
+    const sd = new Date(r.sRaw), ed = new Date(r.eRaw);
+    const ses = r.session.split(" ")[1]||"";
+    const title = (ses?`(${ses}) `:"") + r.name;
+
+    let html = `<div class="card"><h3>${title}</h3>`;
+
+    if (fieldToggles.description) {
+      html += `<div class="description">
+        <span class="short-desc">${brief(r.desc)}</span>
+        <span class="full-desc" style="display:none;">${toHTML(r.desc)}</span>
+        ${r.desc.length>140?'<span class="read-more-toggle">Read more</span>':""}
+      </div>`;
+    }
+    if (fieldToggles.openings) {
+      html += `<p><strong>Openings:</strong> ${r.open}</p>`;
+    }
+    if (fieldToggles.age) {
+      html += `<p><strong>Ages:</strong> ${r.age}</p>`;
+    }
+    if (fieldToggles.days) {
+      html += `<p><strong>Day(s):</strong> ${r.days}</p>`;
+    }
+    if (fieldToggles.time) {
+      html += `<p><strong>Time:</strong> ${r.time}</p>`;
+    }
+    if (fieldToggles.dates) {
+      html += `<p><strong>Date(s):</strong> ${dateRange(sd,ed)}</p>`;
+    }
+    if (fieldToggles.tuition) {
+      html += `<p class="tuition">$${r.tuition}</p>`;
+    }
+    if (fieldToggles.register && r.link) {
+      html += `<a class="register-button" href="${r.link}" target="_blank">Register</a>`;
+    }
+
+    html += `</div>`;
+    box.insertAdjacentHTML("beforeend", html);
+  });
+
+  document.querySelectorAll(".read-more-toggle").forEach(btn=>{
+    btn.onclick = () => {
+      const wrap = btn.parentElement;
+      const sd   = wrap.querySelector(".short-desc");
+      const fd   = wrap.querySelector(".full-desc");
+      const open = fd.style.display==="inline";
+      fd.style.display = open?"none":"inline";
+      sd.style.display = open?"inline":"none";
+      btn.textContent  = open?"Read more":"Show less";
+    };
+  });
+}
+</script>
+
+

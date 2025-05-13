@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Class Cards</title>
+  <link rel="stylesheet" href="https://trush081.github.io/bknwn-classes/classes.css">
+  <script src="https://trush081.github.io/bknwn-classes/classes.js" defer></script>
+</head>
+<body>
+
+  <script type="application/json" id="config">
+    {
+      "categoryNameMap": {
+        "Tumbling": "Future Stars Tumbling Classes",
+        "Hip Hop": "Adult Classes",
+        "Ballet and Jazz": "Future Stars Ballet & Jazz",
+        "Ballet and Tap": "Future Stars Ballet & Tap",
+        "Conditioning and Flexibility": "Conditioning & Flexibility",
+        "Competition Team Program": "Competitive Dancer Summer Class Options",
+        "Developmental Program": "Future Stars Summer Classes",
+        "2025 Spring": "Spring Workshops"
+      },
+      "hiddenCategories": [
+        "Example", 
+        "Example 2"
+      ],
+      "displayToggles": {
+        "showSeason": true,
+        "showOpenings": false,
+        "showAges": true,
+        "showDays": true,
+        "showDates": true,
+        "showTime": true,
+        "showTuition": true
+      }
+    }
+  </script>
+
+  <div class="filters-wrapper">
+
+    <div class="filter-search-row">
+      <div class="filter-search">
+        <input type="text" id="filter-title-search" class="search-input"  placeholder="Search">
+  
+        <label class="checkbox-label">
+          <input type="checkbox" id="filter-has-openings" checked>
+          Open classes only
+        </label>
+      </div>
+  
+      <button id="toggle-filters" class="toggle-filters-button">Show Filters</button>
+    </div>
+    
+    <div id="filters-panel" class="filters-container">
+      <div class="filter-group">
+        <label for="filter-category">Category</label>
+        <select id="filter-category">
+          <option value="">All Categories</option>
+        </select>
+      </div>
+    
+      <div class="filter-group">
+        <label for="filter-season">Season</label>
+        <select id="filter-season">
+          <option value="">All Seasons</option>
+        </select>
+      </div>
+    
+      <div class="filter-group">
+        <label for="filter-exact-age">Age</label>
+        <input type="number" id="filter-exact-age" min="0" step="1" inputmode="numeric" pattern="\d*">
+      </div>
+    
+      <div class="filter-group wide">
+        <label>Date Range</label>
+        <div class="inline-range">
+          <input type="date" id="filter-start-date" placeholder="Start date">
+          <span>to</span>
+          <input type="date" id="filter-end-date" placeholder="End date">
+        </div>
+      </div>
+    
+      <div class="filter-group wide">
+        <label>Time Range</label>
+        <div class="inline-range">
+          <input type="time" id="filter-time-start" placeholder="After">
+          <span>to</span>
+          <input type="time" id="filter-end-time" placeholder="Before">
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button id="apply-filters"  class="btn-primary">Apply</button>
+        <button id="clear-filters"  class="btn-secondary">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARDS -->
+  <div id="cards-container">Loading…</div>
+</body>
+</html>

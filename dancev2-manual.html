@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Class Cards</title>
+  <style>
+    :root {
+      --primary: #500975;
+      --primary-dark: #3c055a;
+      --accent: #2980b9;
+      --bg: #f6f5fa;
+      --bg-card: #fff;
+      --text: #2d2d2d;
+      --text-muted: #5d5d5d;
+      --rad: 14px;
+      --gap: 1rem;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    html,body{
+      margin:0;
+      height:auto;
+      overflow:hidden !important;   /* kills the inner scrollbar */
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      font-family: var(--font);
+      color: var(--text);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    #cards-container {
+      width: 100%;
+      max-width: 1200px;
+      margin: var(--gap) auto;
+      padding: 0 var(--gap) var(--gap);
+    }
+
+    /* === FILTERS === */
+    .filters-wrapper {
+      background: #fff;
+      border-radius: 0 0 var(--rad) var(--rad);  
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+      padding: 1.5rem 1.5rem 1rem;   
+      max-width: 1200px;
+      margin: 0 auto 2rem; 
+    }
+
+    .filter-search-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .filter-search {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    .filter-group select,
+    .filter-group input[type="text"],
+    .filter-group input[type="number"],
+    .inline-range input[type="date"],
+    .inline-range input[type="time"] {
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.95rem;
+      width: 100%;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .filter-group select:focus,
+    .filter-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(80, 9, 117, 0.12);
+    }
+
+    #filter-exact-age {
+      max-width: 60px;
+    }
+
+    .checkbox-label {
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .toggle-filters-button {
+      padding: 0.55rem 1.1rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      height: 2.5rem;
+      align-self: flex-start;
+      box-shadow: 0 2px 6px rgba(80, 9, 117, 0.1);
+    }
+
+    .toggle-filters-button:hover {
+      background: var(--primary-dark);
+    }
+
+    .filters-container {
+      display: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .filters-container.active {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.25rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
+      margin-top: 1rem;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      min-width: 160px;
+      flex: 1;
+      max-width: 200px;
+      margin-bottom: 1rem; /* ADD this line */
+    }
+
+    .filter-group label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+      margin-bottom: 0.35rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      width: 100%;
+    }
+
+    .filter-group.wide {
+      grid-column: span 2;
+    }
+
+    /* action-row container */
+    .filter-actions {
+      grid-column: 1 / -1;                 /* span full width of grid   */
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    /* shared btn base */
+    .filter-actions .btn-primary,
+    .filter-actions .btn-secondary {
+      flex: 1;
+      padding: 0.55rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.25s ease;
+    }
+
+    /* purple “Apply” */
+    .filter-actions .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+    .filter-actions .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    /* light “Clear” */
+    .filter-actions .btn-secondary {
+      background: #ece8f1;
+      color: var(--primary-dark);
+    }
+    .filter-actions .btn-secondary:hover {
+      background: #d9d3e3;
+    }
+
+
+    .inline-range { 
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;  
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .inline-range input { width: 100%; }
+
+    .inline-range span {  
+      display: block;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* === RESPONSIVE === */
+    @media (max-width: 640px) {
+      .filter-group {
+        min-width: 100%;
+      }
+
+      .filter-search {
+        max-width: 100%;
+      }
+
+      .inline-range {
+        display:flex; 
+        flex-direction: column;
+        align-items: flex-start;
+        gap:0.5rem;
+      }
+
+      .inline-range span{
+        align-self:flex-start;    
+        font-size:0.8rem;
+        color:var(--text-muted);
+        margin:0;               
+        pointer-events:none;
+      }
+
+      .inline-range input{
+        width:100%;
+      }
+
+      .toggle-filters-button {
+        width: 100%;
+        margin-top: 0.5rem;
+      }
+
+      .filter-search-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+
+    /* === Polished search bar ====================================== */
+    .search-input {
+      width: 100%;
+      padding: 0.55rem 2.5rem 0.55rem 0.75rem;   /* extra space on right for icon */
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      background: #fff;
+      font-size: 0.95rem;
+      font-family: inherit;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
+      transition: border-color 0.2s, box-shadow 0.2s;
+
+      /* inline SVG magnifier */
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23500975' viewBox='0 0 24 24'%3E%3Cpath d='M11 2a9 9 0 1 1 0 18 9 9 0 0 1 0-18zm0 2a7 7 0 1 0 0 14 7 7 0 0 0 0-14zm10.32 15.9-3.49-3.5a1 1 0 0 0-1.42 1.42l3.5 3.49a1 1 0 1 0 1.41-1.41z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-size: 1rem;
+      background-position: right 0.9rem center;
+    }
+
+    .search-input::placeholder { color: #9a9a9a; }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(80, 9, 117, 0.15);
+    }
+
+
+    /* === CARDS === */
+    .category-header {
+      margin-top: 2em;
+      font-size: 1.3rem;
+      color: var(--primary-dark);
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 0.25em;
+    }
+
+    .cards-grid {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: var(--gap);
+    }
+
+    .card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex: 0 1 calc(33.33% - var(--gap));
+      max-width: calc(33.333% - var(--gap));
+      background: var(--bg-card);
+      border-left: 6px solid var(--primary);
+      border-radius: var(--rad);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+      padding: 1.1rem;
+      min-width: 280px;
+      transition: height 0.6s ease;
+    }
+
+    @media (max-width: 940px) {
+      .card {
+        flex: 0 1 calc(50% - var(--gap));
+        max-width: calc(50% - var(--gap));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .card {
+        flex: 0 1 100%;
+        max-width: 100%;
+      }
+    }
+
+    .card-header {
+      min-height: 3.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    .card-header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4rem;
+      gap: 0.5rem;
+    }
+
+    .session-label {
+      display: inline-block;
+      color: #fff;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      white-space: nowrap;
+      text-transform: uppercase;
+    }
+
+    .session-label.spring { background: #e9fbe5; color: #4ba764; }
+    .session-label.summer { background: #fff9db; color: #a68d00; }
+    .session-label.fall { background: #fff0e0; color: #c4742a; }
+    .session-label.winter { background: #e3f2fd; color: #5c8dc5; }
+
+    .openings-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .card h3 {
+      margin: 0 0 0.6rem;
+      font-size: 1.15rem;
+      color: var(--primary);
+      font-weight: 600;
+      min-height: 3rem;
+    }
+
+    .description {
+      font-size: 0.94rem;
+      line-height: 1.45;
+      margin-bottom: 0.55rem;
+      overflow: visible;
+    }
+
+    .short-desc {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .full-desc {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height 0.4s ease, opacity 0.3s ease, transform 0.3s ease;
+      display: block;
+    }
+
+    .description ul {
+      padding-left: 1.25rem;
+      margin: 0.4rem 0;
+    }
+
+    .description li {
+      list-style-type: disc;
+      margin: 0.25rem 0;
+    }
+
+    .card.expanded .short-desc {
+      display: none;
+    }
+
+    .card.expanded .full-desc {
+      max-height: 1000px;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .read-more-toggle {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--accent);
+      margin-top: 0.3rem;
+      cursor: pointer;
+    }
+
+    .card p {
+      margin: 0.3rem 0;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    .tuition {
+      font-size: 1.05rem;
+      margin-top: 0.4rem;
+    }
+
+    .register-button {
+      display: block;
+      width: 100%;
+      text-align: center;
+      margin-top: 10px;
+      padding: 0.65rem 1.15rem;
+      background: var(--primary);
+      color: #fff;
+      text-decoration: none;
+      border-radius: var(--rad);
+      font-weight: 600;
+    }
+
+    .register-button:hover {
+      background: var(--primary-dark);
+    }
+  </style>
+</head>
+<body>
+
+  <script type="application/json" id="config">
+    {
+      "categoryNameMap": {
+        "Tumbling": "Future Stars Tumbling Classes",
+        "Hip Hop": "Adult Classes",
+        "Ballet and Jazz": "Future Stars Ballet & Jazz",
+        "Ballet and Tap": "Future Stars Ballet & Tap",
+        "Conditioning and Flexibility": "Conditioning & Flexibility",
+        "Competition Team Program": "Competitive Dancer Summer Class Options",
+        "Developmental Program": "Future Stars Summer Classes",
+        "2025 Spring": "Spring Workshops"
+      },
+      "hiddenCategories": [
+        "Example", 
+        "Example 2"
+      ],
+      "displayToggles": {
+        "showSeason": true,
+        "showOpenings": false,
+        "showAges": true,
+        "showDays": true,
+        "showDates": true,
+        "showTime": true,
+        "showTuition": true
+      }
+    }
+  </script>
+
+  <div class="filters-wrapper">
+
+    <div class="filter-search-row">
+      <div class="filter-search">
+        <input type="text" id="filter-title-search" class="search-input"  placeholder="Search">
+  
+        <label class="checkbox-label">
+          <input type="checkbox" id="filter-has-openings" checked>
+          Open classes only
+        </label>
+      </div>
+  
+      <button id="toggle-filters" class="toggle-filters-button">Show Filters</button>
+    </div>
+    
+    <div id="filters-panel" class="filters-container">
+      <div class="filter-group">
+        <label for="filter-category">Category</label>
+        <select id="filter-category">
+          <option value="">All Categories</option>
+        </select>
+      </div>
+    
+      <div class="filter-group">
+        <label for="filter-season">Season</label>
+        <select id="filter-season">
+          <option value="">All Seasons</option>
+        </select>
+      </div>
+    
+      <div class="filter-group">
+        <label for="filter-exact-age">Age</label>
+        <input type="number" id="filter-exact-age" min="0" step="1" inputmode="numeric" pattern="\d*">
+      </div>
+    
+      <div class="filter-group wide">
+        <label>Date Range</label>
+        <div class="inline-range">
+          <input type="date" id="filter-start-date" placeholder="Start date">
+          <span>to</span>
+          <input type="date" id="filter-end-date" placeholder="End date">
+        </div>
+      </div>
+    
+      <div class="filter-group wide">
+        <label>Time Range</label>
+        <div class="inline-range">
+          <input type="time" id="filter-time-start" placeholder="After">
+          <span>to</span>
+          <input type="time" id="filter-end-time" placeholder="Before">
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button id="apply-filters"  class="btn-primary">Apply</button>
+        <button id="clear-filters"  class="btn-secondary">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARDS -->
+  <div id="cards-container">Loading…</div>
+
+  <script>
+    (function(){
+      const container = document.getElementById('cards-container');
+
+      const getTime = d => d ? parseESTLocal(d).getTime() : Number.POSITIVE_INFINITY;
+      
+      const fmtDate = d => {
+        return new Date(d).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          timeZone: 'America/New_York' // <- Force EST/EDT
+        });
+      };
+
+      const dateRange = (s,e) => {
+        const sd=parseESTLocal(s), ed=parseESTLocal(e);
+        return sd.getTime()===ed.getTime()
+          ? fmtDate(sd)
+          : fmtDate(sd) + ' - ' + fmtDate(ed);
+      };
+
+      const formatAge = str => {
+        const match = str.match(/^P(\d{2})Y(\d{2})M$/);
+        if (!match) return str;
+        const [ , years ] = match.map(Number);
+        return years;
+      };
+
+      const formatAgeRange = (min, max) => {
+        const minFormatted = formatAge(min);
+        const maxFormatted = formatAge(max);
+        if (!maxFormatted || isNaN(maxFormatted) || maxFormatted >= 99) return `${minFormatted} & Up`;
+        return `${minFormatted} - ${maxFormatted}`;
+      };
+
+      const formatTime = str => {
+        const [hour, minute] = str.split(':').map(Number);
+        const suffix = hour >= 12 ? 'pm' : 'am';
+        const hour12 = ((hour + 11) % 12) + 1;
+        return `${hour12}:${String(minute).padStart(2, '0')}${suffix}`;
+      };
+
+      const cfg = JSON.parse(
+        document.getElementById('config').textContent
+      );
+      
+      const categoryNameMap  = cfg.categoryNameMap;
+      const hiddenCategories = cfg.hiddenCategories;
+      const displayToggles   = cfg.displayToggles;
+
+      // ============== CHANGE ONLY ABOVE =========================
+
+      const filters = {
+        category: null,
+        season: null,
+        inputAge: null,
+        startAfter: new Date(),
+        endBefore: null,
+        startTimeAfter: null,
+        endTimeBefore: null,
+        titleSearch: '',
+        hasOpenings: true
+      };
+
+      // ============== Lite-Markdown → HTML =========================
+      function mdLite(text) {
+        if (!text) return '';
+
+        // 1. Handle forced line breaks first
+        const paraLines = text.split('||');
+
+        // 2. Convert each line
+        const htmlLines = paraLines.map(line => {
+          // bullet?
+          if (/^\s*\*\s+/.test(line)) {
+            const item = line.replace(/^\s*\*\s+/, '');
+            return `<li>${item}</li>`;
+          }
+          return line;
+        });
+
+        // 3. Wrap contiguous <li> blocks in <ul>
+        let html = htmlLines.join('\n');
+        html = html.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>')
+                  .replace(/<\/ul>\s*<ul>/g, '');           // merge adjacent lists
+
+        // 4. Inline links  [text](url)
+        html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
+                            '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+        return html;
+      }
+
+      function parseESTLocal(dateStr) {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        return new Date(y, m - 1, d);   // midnight in local (EST/EDT)
+      }
+
+
+      let all = [];
+
+      function init(){
+        fetch('https://jackrabbit-proxy.trush081.workers.dev/')
+          .then(r=>r.json())
+          .then(({rows=[]})=>{
+            all = rows
+              .filter(r=>r.openings.calculated_openings>0)
+              .map(r=>({
+                id:        r.id || '',
+                title:     r.name || 'Untitled Class',
+                desc:      (r.description || '').replace(/\r?\n/g, '||'),
+                days:      r.meeting_days
+                            ? Object.entries(r.meeting_days)
+                                .filter(([, v]) => v)
+                                .map(([d]) => d[0].toUpperCase() + d.slice(1))
+                                .join(', ')
+                            : 'N/A',
+                start_time: r.start_time ? formatTime(r.start_time) : '—',
+                end_time:   r.end_time ? formatTime(r.end_time) : '—',
+                age_range:  formatAgeRange(r.min_age || 'P03Y00M', r.max_age || 'P99Y00M'),
+                openings:   r.openings?.calculated_openings ?? '—',
+                date_range: r.start_date && r.end_date
+                              ? dateRange(r.start_date, r.end_date)
+                              : 'TBD',
+                start_date: r.start_date || '',
+                end_date:   r.end_date || '',
+                tuition:    r.tuition?.fee != null ? `$${r.tuition.fee.toFixed(2)}` : 'N/A',
+                reg_link:   r.online_reg_link && r.online_reg_link !== '#' ? r.online_reg_link : null,
+                category1:  r.category1 || '',
+                category2:  r.category2 || '',
+                category3:  r.category3 || '',
+                session:    r.session || '',
+              }));
+
+              all.sort((a, b) => getTime(a.start_date) - getTime(b.start_date));
+            
+              const categorySet = new Set();
+              all.forEach(item => {
+                [item.category1, item.category2, item.category3].forEach(cat => {
+                  if (cat) categorySet.add(cat);
+                });
+              });
+
+              // Sort and add to dropdown Categories
+              const categorySelect = document.getElementById('filter-category');
+              Array.from(categorySet)
+                .sort()
+                .forEach(cat => {
+                  const opt = document.createElement('option');
+                  opt.value = cat;
+                  opt.textContent = cat;
+                  categorySelect.appendChild(opt);
+                });
+                
+                // Sort and add to dropdown Seasons
+                const seasonSet = new Set();
+                all.forEach(item => {
+                  const season = item.session?.split(' ')[1];
+                  if (season) seasonSet.add(season);
+                });
+
+                const seasonSelect = document.getElementById('filter-season');
+                Array.from(seasonSet)
+                  .sort()
+                  .forEach(season => {
+                    const opt = document.createElement('option');
+                    opt.value = season;
+                    opt.textContent = season;
+                    seasonSelect.appendChild(opt);
+                  });
+
+            render();
+
+            filters.startAfter = null;
+          });
+      }
+
+      function render(){
+        const filtered = all.filter(c => {
+          if (filters.category && ![c.category1, c.category2, c.category3].includes(filters.category)) return false;
+          if (filters.season && c.session?.split(' ')[1] !== filters.season) return false;
+          
+          if (filters.inputAge !== null) {
+            const ageParts = c.age_range.split(' ');
+            const ageMin = parseInt(ageParts[0]);
+            const ageMax = parseInt(ageParts[2]); // if format is "5 - 8"
+
+            const isAndUp = c.age_range.includes('& Up');
+
+            if (isNaN(ageMin)) return false;
+
+            if (isAndUp) {
+              if (filters.inputAge < ageMin) return false;
+            } else if (!isNaN(ageMax)) {
+              if (filters.inputAge < ageMin || filters.inputAge > ageMax) return false;
+            } else {
+              return false; // unrecognized format
+            }
+          }
+
+          // Start Date Filter
+          if (filters.startAfter && c.start_date) {
+            const classStart = parseESTLocal(c.start_date);
+            if (classStart < filters.startAfter) return false;
+          }
+
+          // End Date Filter
+          if (filters.endBefore && c.end_date) {
+            const classEnd = parseESTLocal(c.end_date);
+            if (classEnd > filters.endBefore) return false;
+          }
+
+          // START TIME AFTER
+          if (filters.startTimeAfter && c.start_time) {
+            const [h, m, p] = c.start_time.match(/(\d+):(\d+)(am|pm)/i)?.slice(1) || [];
+            if (h && m && p) {
+              let hour24 = parseInt(h) % 12 + (p.toLowerCase() === 'pm' ? 12 : 0);
+              const classMinutes = hour24 * 60 + parseInt(m);
+
+              const [ha, ma] = filters.startTimeAfter.split(':').map(Number);
+              const afterMinutes = ha * 60 + ma;
+
+              if (classMinutes < afterMinutes) return false;
+            }
+          }
+
+          // END TIME BEFORE
+          if (filters.endTimeBefore && c.end_time) {
+            const [h, m, p] = c.end_time.match(/(\d+):(\d+)(am|pm)/i)?.slice(1) || [];
+            if (h && m && p) {
+              let hour24 = parseInt(h) % 12 + (p.toLowerCase() === 'pm' ? 12 : 0);
+              const classMinutes = hour24 * 60 + parseInt(m);
+
+              const [hb, mb] = filters.endTimeBefore.split(':').map(Number);
+              const beforeMinutes = hb * 60 + mb;
+
+              if (classMinutes > beforeMinutes) return false;
+            }
+          }
+
+          if (filters.hasOpenings && (!c.openings || c.openings <= 0)) return false;
+          if (filters.titleSearch && !c.title.toLowerCase().includes(filters.titleSearch)) return false;
+
+          return true;
+        });
+
+        let html = '';
+        const grouped = {};
+        filtered.forEach(item => {
+          const cats = [item.category1, item.category2, item.category3].filter(Boolean);
+          cats.forEach(cat => {
+            if (!grouped[cat]) grouped[cat] = [];
+            grouped[cat].push(item);
+          });
+        });
+
+        const uncategorized = [];
+        hiddenCategories.forEach(cat => {
+          if (grouped[cat]) {
+            uncategorized.push(...grouped[cat]);
+            delete grouped[cat];             // remove so they don’t render twice
+          }
+        });
+
+        Object.keys(grouped)
+          .sort((a, b) => {
+            const A = (categoryNameMap[a] || a).toLowerCase();
+            const B = (categoryNameMap[b] || b).toLowerCase();
+            return A.localeCompare(B);
+          })
+          .forEach(category => {
+            const items = grouped[category];
+            const isHidden = hiddenCategories.includes(category);
+
+            if (!isHidden) {                        // header only if not hidden
+              const display = categoryNameMap[category] || category;
+              html += `<h2 class="category-header">${display}</h2>`;
+            }
+
+            html += `<div class="cards-grid">`;     // cards always render
+            html += items.map(c => `
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-header-top">
+                    ${c.session && displayToggles.showSeason ? `<span class="session-label ${c.session.split(' ')[1].toLowerCase()}">${c.session.split(' ')[1]}</span>` : ''}
+                    ${c.openings && displayToggles.showOpenings ? `<span class="openings-label">${c.openings} spots left</span>` : ''}
+                  </div>
+                  <h3>${c.title}</h3>
+                </div>
+                <div class="description">
+                  <span class="short-desc">${c.desc.split('||').slice(0,3).join(' ') + (c.desc.length > 140 ? '...' : '')}</span>
+                  <span class="full-desc">${mdLite(c.desc)}</span>
+                  <span class="read-more-toggle">Read more</span>
+                </div>
+                ${c.age_range && displayToggles.showAges ? `<p><strong>Ages:</strong> ${c.age_range}</p>` : ''}
+                ${c.days && displayToggles.showDays ? `<p><strong>Day(s):</strong> ${c.days}</p>` : ''}
+                ${c.date_range && displayToggles.showDates ? `<p><strong>Date(s):</strong> ${c.date_range}</p>` : ''}
+                ${c.start_time && c.end_time && displayToggles.showTime ? `<p><strong>Time:</strong> ${c.start_time} - ${c.end_time}</p>` : ''}
+                ${c.tuition && displayToggles.showTuition ? `<p class="tuition"><strong>Tuition:</strong> ${c.tuition}</p>` : ''}
+                ${c.reg_link ? `<a class="register-button" href="${c.reg_link}" target="_blank">Register</a>` : ''}
+              </div>
+            `).join('');
+            html += `</div>`;
+          });
+
+          if (uncategorized.length) {
+            html += `<h2 class="category-header">Other</h2>`;
+            html += `<div class="cards-grid">`;
+            html += uncategorized.map(c => `
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-header-top">
+                    ${c.session && displayToggles.showSeason ? `<span class="session-label ${c.session.split(' ')[1].toLowerCase()}">${c.session.split(' ')[1]}</span>` : ''}
+                    ${c.openings && displayToggles.showOpenings ? `<span class="openings-label">${c.openings} spots left</span>` : ''}
+                  </div>
+                  <h3>${c.title}</h3>
+                </div>
+                <div class="description">
+                  <span class="short-desc">${c.desc.split('||').slice(0,3).join(' ') + (c.desc.length > 140 ? '...' : '')}</span>
+                  <span class="full-desc">${mdLite(c.desc)}</span>
+                  <span class="read-more-toggle">Read more</span>
+                </div>
+                ${c.age_range && displayToggles.showAges ? `<p><strong>Ages:</strong> ${c.age_range}</p>` : ''}
+                ${c.days && displayToggles.showDays ? `<p><strong>Day(s):</strong> ${c.days}</p>` : ''}
+                ${c.date_range && displayToggles.showDates ? `<p><strong>Date(s):</strong> ${c.date_range}</p>` : ''}
+                ${c.start_time && c.end_time && displayToggles.showTime ? `<p><strong>Time:</strong> ${c.start_time} - ${c.end_time}</p>` : ''}
+                ${c.tuition && displayToggles.showTuition ? `<p class="tuition"><strong>Tuition:</strong> ${c.tuition}</p>` : ''}
+                ${c.reg_link ? `<a class="register-button" href="${c.reg_link}" target="_blank">Register</a>` : ''}
+              </div>
+            `).join('');
+            html += `</div>`;
+          }
+
+        container.innerHTML = html || '<p>No classes available.</p>';
+
+        document.querySelectorAll('.read-more-toggle').forEach(btn => {
+          btn.onclick = () => {
+            const card = btn.closest('.card'); // get the parent card
+            const isExpanded = card.classList.toggle('expanded'); // toggle class
+
+            btn.textContent = isExpanded ? 'Show less' : 'Read more'; // update text
+          };
+        });
+      }
+
+      init();
+
+      // Filter event listeners (AFTER init)
+      document.getElementById('filter-category').addEventListener('change', (e) => {
+        filters.category = e.target.value || null;
+      });
+
+      document.getElementById('filter-season').addEventListener('change', (e) => {
+        filters.season = e.target.value || null;
+      });
+
+      document.getElementById('filter-exact-age').addEventListener('input', (e) => {
+        const value = e.target.value;
+        filters.inputAge = value ? parseInt(value) : null;
+      });
+
+      document.getElementById('filter-start-date').addEventListener('change', (e) => {
+        filters.startAfter = e.target.value ? parseESTLocal(e.target.value) : null;
+      });
+
+      document.getElementById('filter-end-date').addEventListener('change', (e) => {
+        filters.endBefore = e.target.value ? parseESTLocal(e.target.value) : null;
+      });
+
+      document.getElementById('filter-time-start').addEventListener('change', (e) => {
+        filters.startTimeAfter = e.target.value || null; // e.g. "10:00"
+      });
+
+      document.getElementById('filter-end-time').addEventListener('change', (e) => {
+        filters.endTimeBefore = e.target.value || null; // e.g. "15:00"
+      });
+
+      // APPLY = run render() with current selections
+      document.getElementById('apply-filters').addEventListener('click', () => {
+        render();
+      });
+
+      // CLEAR = reset UI + filters, then render()
+      document.getElementById('clear-filters').addEventListener('click', () => {
+        // reset form controls
+        document.querySelectorAll('#filters-panel input').forEach(i => i.value = '');
+        document.getElementById('filter-category').value = '';
+        document.getElementById('filter-season').value = '';
+
+        // reset filters object
+        Object.assign(filters, {
+          category: null,
+          season: null,
+          inputAge: null,
+          startAfter: null,
+          endBefore: null,
+          startTimeAfter: null,
+          endTimeBefore: null,
+        });
+
+        render();
+      });
+
+      document.getElementById('filter-has-openings').addEventListener('change', (e) => {
+        filters.hasOpenings = e.target.checked;
+        render();
+      });
+
+      document.getElementById('filter-title-search').addEventListener('input', (e) => {
+        filters.titleSearch = e.target.value.toLowerCase();
+        render();
+      });
+
+      document.getElementById('toggle-filters').addEventListener('click', () => {
+        const panel = document.getElementById('filters-panel');
+        const btn = document.getElementById('toggle-filters');
+
+        const isOpen = panel.classList.toggle('active');
+        btn.textContent = isOpen ? 'Hide Filters' : 'Show Filters';
+      });
+
+    })();
+  </script>
+</body>
+</html>

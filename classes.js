@@ -54,7 +54,7 @@
       category: null,
       season: null,
       inputAge: null,
-      startAfter: new Date(),
+      startAfter: null,
       endBefore: null,
       startTimeAfter: null,
       endTimeBefore: null,
@@ -171,13 +171,7 @@
 
           render();
 
-          // build "YYYY‑MM‑DD" in local (EST/EDT) zone
-          const now   = new Date();
-          const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-
-          document.getElementById('filter-start-date').value = today;
-
-          filters.startAfter = parseESTLocal(today)
+          filters.startAfter = null;
         });
     }
 
