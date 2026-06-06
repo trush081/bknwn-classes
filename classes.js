@@ -1,6 +1,6 @@
 (function(){
     const container = document.getElementById('cards-container');
-
+ 
     const getTime = d => d ? parseESTLocal(d).getTime() : Number.POSITIVE_INFINITY;
     
     const fmtDate = d => {
@@ -11,35 +11,35 @@
         timeZone: 'America/New_York' // <- Force EST/EDT
       });
     };
-
+ 
     const dateRange = (s,e) => {
       const sd=parseESTLocal(s), ed=parseESTLocal(e);
       return sd.getTime()===ed.getTime()
         ? fmtDate(sd)
         : fmtDate(sd) + ' - ' + fmtDate(ed);
     };
-
+ 
     const formatAge = str => {
       const match = str.match(/^P(\d{2})Y(\d{2})M$/);
       if (!match) return str;
       const [ , years ] = match.map(Number);
       return years;
     };
-
+ 
     const formatAgeRange = (min, max) => {
       const minFormatted = formatAge(min);
       const maxFormatted = formatAge(max);
       if (!maxFormatted || isNaN(maxFormatted) || maxFormatted >= 99) return `${minFormatted} & Up`;
       return `${minFormatted} - ${maxFormatted}`;
     };
-
+ 
     const formatTime = str => {
       const [hour, minute] = str.split(':').map(Number);
       const suffix = hour >= 12 ? 'pm' : 'am';
       const hour12 = ((hour + 11) % 12) + 1;
       return `${hour12}:${String(minute).padStart(2, '0')}${suffix}`;
     };
-
+ 
     const cfg = JSON.parse(
       document.getElementById('config').textContent
     );
@@ -47,9 +47,9 @@
     const categoryNameMap  = cfg.categoryNameMap;
     const hiddenCategories = cfg.hiddenCategories;
     const displayToggles   = cfg.displayToggles;
-
+ 
     // ============== CHANGE ONLY ABOVE =========================
-
+ 
     const filters = {
       category: null,
       season: null,
@@ -61,14 +61,14 @@
       titleSearch: '',
       hasOpenings: true
     };
-
+ 
     // ============== Lite-Markdown → HTML =========================
     function mdLite(text) {
       if (!text) return '';
-
+ 
       // 1. Handle forced line breaks first
       const paraLines = text.split('||');
-
+ 
       // 2. Convert each line
       const htmlLines = paraLines.map(line => {
         // bullet?
@@ -78,27 +78,27 @@
         }
         return line;
       });
-
+ 
       // 3. Wrap contiguous <li> blocks in <ul>
       let html = htmlLines.join('\n');
       html = html.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>')
                 .replace(/<\/ul>\s*<ul>/g, '');           // merge adjacent lists
-
+ 
       // 4. Inline links  [text](url)
       html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
                           '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-
+ 
       return html;
     }
-
+ 
     function parseESTLocal(dateStr) {
       const [y, m, d] = dateStr.split('-').map(Number);
       return new Date(y, m - 1, d);   // midnight in local (EST/EDT)
     }
-
-
+ 
+ 
     let all = [];
-
+ 
     function init(){
       fetch('https://jackrabbit-proxy.trush081.workers.dev/')
         .then(r=>r.json())
@@ -131,7 +131,7 @@
               category3:  r.category3 || '',
               session:    r.session || '',
             }));
-
+ 
             all.sort((a, b) => getTime(a.start_date) - getTime(b.start_date));
           
             const categorySet = new Set();
@@ -140,7 +140,7 @@
                 if (cat) categorySet.add(cat);
               });
             });
-
+ 
             // Sort and add to dropdown Categories
             const categorySelect = document.getElementById('filter-category');
             Array.from(categorySet)
@@ -158,7 +158,7 @@
                 const season = item.session?.split(' ')[1];
                 if (season) seasonSet.add(season);
               });
-
+ 
               const seasonSelect = document.getElementById('filter-season');
               Array.from(seasonSet)
                 .sort()
@@ -168,13 +168,13 @@
                   opt.textContent = season;
                   seasonSelect.appendChild(opt);
                 });
-
+ 
           render();
-
+ 
           filters.startAfter = null;
         });
     }
-
+ 
     function render(){
       const filtered = all.filter(c => {
         if (filters.category && ![c.category1, c.category2, c.category3].includes(filters.category)) return false;
@@ -184,11 +184,11 @@
           const ageParts = c.age_range.split(' ');
           const ageMin = parseInt(ageParts[0]);
           const ageMax = parseInt(ageParts[2]); // if format is "5 - 8"
-
+ 
           const isAndUp = c.age_range.includes('& Up');
-
+ 
           if (isNaN(ageMin)) return false;
-
+ 
           if (isAndUp) {
             if (filters.inputAge < ageMin) return false;
           } else if (!isNaN(ageMax)) {
@@ -197,87 +197,82 @@
             return false; // unrecognized format
           }
         }
-
+ 
         // Start Date Filter
         if (filters.startAfter && c.start_date) {
           const classStart = parseESTLocal(c.start_date);
           if (classStart < filters.startAfter) return false;
         }
-
+ 
         // End Date Filter
         if (filters.endBefore && c.end_date) {
           const classEnd = parseESTLocal(c.end_date);
           if (classEnd > filters.endBefore) return false;
         }
-
+ 
         // START TIME AFTER
         if (filters.startTimeAfter && c.start_time) {
           const [h, m, p] = c.start_time.match(/(\d+):(\d+)(am|pm)/i)?.slice(1) || [];
           if (h && m && p) {
             let hour24 = parseInt(h) % 12 + (p.toLowerCase() === 'pm' ? 12 : 0);
             const classMinutes = hour24 * 60 + parseInt(m);
-
+ 
             const [ha, ma] = filters.startTimeAfter.split(':').map(Number);
             const afterMinutes = ha * 60 + ma;
-
+ 
             if (classMinutes < afterMinutes) return false;
           }
         }
-
+ 
         // END TIME BEFORE
         if (filters.endTimeBefore && c.end_time) {
           const [h, m, p] = c.end_time.match(/(\d+):(\d+)(am|pm)/i)?.slice(1) || [];
           if (h && m && p) {
             let hour24 = parseInt(h) % 12 + (p.toLowerCase() === 'pm' ? 12 : 0);
             const classMinutes = hour24 * 60 + parseInt(m);
-
+ 
             const [hb, mb] = filters.endTimeBefore.split(':').map(Number);
             const beforeMinutes = hb * 60 + mb;
-
+ 
             if (classMinutes > beforeMinutes) return false;
           }
         }
-
+ 
         if (filters.hasOpenings && (!c.openings || c.openings <= 0)) return false;
         if (filters.titleSearch && !c.title.toLowerCase().includes(filters.titleSearch)) return false;
-
+ 
         return true;
       });
-
+ 
       let html = '';
       const grouped = {};
+      const other = { items: [], ids: new Set() };
       filtered.forEach(item => {
-        const cats = [item.category1, item.category2, item.category3].filter(Boolean);
+        const cats = [...new Set([item.category1, item.category2, item.category3].filter(Boolean))];
         cats.forEach(cat => {
-          if (!grouped[cat]) grouped[cat] = [];
-          grouped[cat].push(item);
+          if (hiddenCategories.includes(cat)) {
+            if (!other.ids.has(item.id)) {
+              other.ids.add(item.id);
+              other.items.push(item);
+            }
+            return;
+          }
+          const displayName = categoryNameMap[cat] || cat;
+          if (!grouped[displayName]) grouped[displayName] = { items: [], ids: new Set() };
+          if (!grouped[displayName].ids.has(item.id)) {
+            grouped[displayName].ids.add(item.id);
+            grouped[displayName].items.push(item);
+          }
         });
       });
-
-      const uncategorized = [];
-      hiddenCategories.forEach(cat => {
-        if (grouped[cat]) {
-          uncategorized.push(...grouped[cat]);
-          delete grouped[cat];             // remove so they don’t render twice
-        }
-      });
-
+ 
       Object.keys(grouped)
-        .sort((a, b) => {
-          const A = (categoryNameMap[a] || a).toLowerCase();
-          const B = (categoryNameMap[b] || b).toLowerCase();
-          return A.localeCompare(B);
-        })
-        .forEach(category => {
-          const items = grouped[category];
-          const isHidden = hiddenCategories.includes(category);
-
-          if (!isHidden) {                        // header only if not hidden
-            const display = categoryNameMap[category] || category;
-            html += `<h2 class="category-header">${display}</h2>`;
-          }
-
-          html += `<div class="cards-grid">`;     // cards always render
+        .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+        .forEach(displayName => {
+          const items = grouped[displayName].items;
+ 
+          html += `<h2 class="category-header">${displayName}</h2>`;
+          html += `<div class="cards-grid">`;
           html += items.map(c => `
             <div class="card">
               <div class="card-header">
@@ -302,11 +297,11 @@
           `).join('');
           html += `</div>`;
         });
-
-        if (uncategorized.length) {
+ 
+        if (other.items.length) {
           html += `<h2 class="category-header">Other</h2>`;
           html += `<div class="cards-grid">`;
-          html += uncategorized.map(c => `
+          html += other.items.map(c => `
             <div class="card">
               <div class="card-header">
                 <div class="card-header-top">
@@ -330,63 +325,63 @@
           `).join('');
           html += `</div>`;
         }
-
+ 
       container.innerHTML = html || '<p>No classes available.</p>';
-
+ 
       document.querySelectorAll('.read-more-toggle').forEach(btn => {
         btn.onclick = () => {
           const card = btn.closest('.card'); // get the parent card
           const isExpanded = card.classList.toggle('expanded'); // toggle class
-
+ 
           btn.textContent = isExpanded ? 'Show less' : 'Read more'; // update text
         };
       });
     }
-
+ 
     init();
-
+ 
     // Filter event listeners (AFTER init)
     document.getElementById('filter-category').addEventListener('change', (e) => {
       filters.category = e.target.value || null;
     });
-
+ 
     document.getElementById('filter-season').addEventListener('change', (e) => {
       filters.season = e.target.value || null;
     });
-
+ 
     document.getElementById('filter-exact-age').addEventListener('input', (e) => {
       const value = e.target.value;
       filters.inputAge = value ? parseInt(value) : null;
     });
-
+ 
     document.getElementById('filter-start-date').addEventListener('change', (e) => {
       filters.startAfter = e.target.value ? parseESTLocal(e.target.value) : null;
     });
-
+ 
     document.getElementById('filter-end-date').addEventListener('change', (e) => {
       filters.endBefore = e.target.value ? parseESTLocal(e.target.value) : null;
     });
-
+ 
     document.getElementById('filter-time-start').addEventListener('change', (e) => {
       filters.startTimeAfter = e.target.value || null; // e.g. "10:00"
     });
-
+ 
     document.getElementById('filter-end-time').addEventListener('change', (e) => {
       filters.endTimeBefore = e.target.value || null; // e.g. "15:00"
     });
-
+ 
     // APPLY = run render() with current selections
     document.getElementById('apply-filters').addEventListener('click', () => {
       render();
     });
-
+ 
     // CLEAR = reset UI + filters, then render()
     document.getElementById('clear-filters').addEventListener('click', () => {
       // reset form controls
       document.querySelectorAll('#filters-panel input').forEach(i => i.value = '');
       document.getElementById('filter-category').value = '';
       document.getElementById('filter-season').value = '';
-
+ 
       // reset filters object
       Object.assign(filters, {
         category: null,
@@ -397,26 +392,26 @@
         startTimeAfter: null,
         endTimeBefore: null,
       });
-
+ 
       render();
     });
-
+ 
     document.getElementById('filter-has-openings').addEventListener('change', (e) => {
       filters.hasOpenings = e.target.checked;
       render();
     });
-
+ 
     document.getElementById('filter-title-search').addEventListener('input', (e) => {
       filters.titleSearch = e.target.value.toLowerCase();
       render();
     });
-
+ 
     document.getElementById('toggle-filters').addEventListener('click', () => {
       const panel = document.getElementById('filters-panel');
       const btn = document.getElementById('toggle-filters');
-
+ 
       const isOpen = panel.classList.toggle('active');
       btn.textContent = isOpen ? 'Hide Filters' : 'Show Filters';
     });
-
+ 
   })();
