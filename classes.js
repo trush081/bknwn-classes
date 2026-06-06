@@ -44,25 +44,7 @@
       document.getElementById('config').textContent
     );
 
-    // ============== JS OVERRIDES (edit these to override HTML config) ==========
-
-    const categoryNameOverrides = {
-      // 'Raw Category': 'Display Name',
-    };
-
-    const hiddenCategoriesOverrides = [
-      'Future Stars Summer Classes',
-    ];
-
-    const displayTogglesOverrides = {
-      // showTuition: false,
-    };
-
-    // ============== END OVERRIDES =============================================
-
-    const categoryNameMap  = Object.assign({}, cfg.categoryNameMap,  categoryNameOverrides);
-    const hiddenCategories = [...new Set([...(cfg.hiddenCategories || []), ...hiddenCategoriesOverrides])];
-    const displayToggles   = Object.assign({}, cfg.displayToggles,   displayTogglesOverrides);
+    const displayToggles = cfg.displayToggles;
 
     // ============== CHANGE ONLY ABOVE =========================
 
@@ -262,22 +244,13 @@
 
       let html = '';
       const grouped = {};
-      const other = { items: [], ids: new Set() };
       filtered.forEach(item => {
         const cats = [...new Set([item.category1, item.category2, item.category3].filter(Boolean))];
         cats.forEach(cat => {
-          if (hiddenCategories.includes(cat)) {
-            if (!other.ids.has(item.id)) {
-              other.ids.add(item.id);
-              other.items.push(item);
-            }
-            return;
-          }
-          const displayName = categoryNameMap[cat] || cat;
-          if (!grouped[displayName]) grouped[displayName] = { items: [], ids: new Set() };
-          if (!grouped[displayName].ids.has(item.id)) {
-            grouped[displayName].ids.add(item.id);
-            grouped[displayName].items.push(item);
+          if (!grouped[cat]) grouped[cat] = { items: [], ids: new Set() };
+          if (!grouped[cat].ids.has(item.id)) {
+            grouped[cat].ids.add(item.id);
+            grouped[cat].items.push(item);
           }
         });
       });
@@ -314,33 +287,6 @@
           html += `</div>`;
         });
 
-        if (other.items.length) {
-          html += `<h2 class="category-header">Other</h2>`;
-          html += `<div class="cards-grid">`;
-          html += other.items.map(c => `
-            <div class="card">
-              <div class="card-header">
-                <div class="card-header-top">
-                  ${c.session && displayToggles.showSeason ? `<span class="session-label ${c.session.split(' ')[1].toLowerCase()}">${c.session.split(' ')[1]}</span>` : ''}
-                  ${c.openings && displayToggles.showOpenings ? `<span class="openings-label">${c.openings} spots left</span>` : ''}
-                </div>
-                <h3>${c.title}</h3>
-              </div>
-              <div class="description">
-                <span class="short-desc">${c.desc.split('||').slice(0,3).join(' ') + (c.desc.length > 140 ? '...' : '')}</span>
-                <span class="full-desc">${mdLite(c.desc)}</span>
-                <span class="read-more-toggle">Read more</span>
-              </div>
-              ${c.age_range && displayToggles.showAges ? `<p><strong>Ages:</strong> ${c.age_range}</p>` : ''}
-              ${c.days && displayToggles.showDays ? `<p><strong>Day(s):</strong> ${c.days}</p>` : ''}
-              ${c.date_range && displayToggles.showDates ? `<p><strong>Date(s):</strong> ${c.date_range}</p>` : ''}
-              ${c.start_time && c.end_time && displayToggles.showTime ? `<p><strong>Time:</strong> ${c.start_time} - ${c.end_time}</p>` : ''}
-              ${c.tuition && displayToggles.showTuition ? `<p class="tuition"><strong>Tuition:</strong> ${c.tuition}</p>` : ''}
-              ${c.reg_link ? `<a class="register-button" href="${c.reg_link}" target="_blank">Register</a>` : ''}
-            </div>
-          `).join('');
-          html += `</div>`;
-        }
 
       container.innerHTML = html || '<p>No classes available.</p>';
 
