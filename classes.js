@@ -51,7 +51,7 @@
     };
 
     const hiddenCategoriesOverrides = [
-      // 'Some Category',
+      'Future Stars Summer Classes',
     ];
 
     const displayTogglesOverrides = {
