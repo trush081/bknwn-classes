@@ -245,7 +245,10 @@
       let html = '';
       const grouped = {};
       filtered.forEach(item => {
-        const cats = [...new Set([item.category1, item.category2, item.category3].filter(Boolean))];
+        // If a category filter is active, only bucket under that category
+        const cats = filters.category
+          ? [filters.category]
+          : [...new Set([item.category1, item.category2, item.category3].filter(Boolean))];
         cats.forEach(cat => {
           if (!grouped[cat]) grouped[cat] = { items: [], ids: new Set() };
           if (!grouped[cat].ids.has(item.id)) {
